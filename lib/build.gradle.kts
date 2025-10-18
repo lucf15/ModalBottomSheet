@@ -42,7 +42,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
 }
 
-val libVersion = "1.0.0"
+val libVersion = "1.0.1"
 val libGroupId = "it.lucf15.compose"
 val libArtifactId = "bottomsheet"
 
