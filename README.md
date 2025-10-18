@@ -1,4 +1,7 @@
-# Compose Modal Bottom Sheet (Android only)
+# ModalBottomSheet (Compose Android only)
+
+[![Release](https://img.shields.io/github/tag/lucf15/ModalBottomSheet.svg)](https://github.com/lucf15/ModalBottomSheet/tags)
+
 
 A custom implementation of Material 3's `ModalBottomSheet` that fixes critical issues with nested
 scrolling and IME (keyboard) padding:
@@ -41,7 +44,7 @@ Add the dependency to your module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("it.lucf15.compose:bottomsheet:1.0.0")
+    implementation("com.github.lucf15:ModalBottomSheet:1.0.1")
 }
 ```
 
@@ -63,13 +66,18 @@ fun ModalBottomSheet(
     sheetMaxWidth: Dp = BottomSheetDefaults.SheetMaxWidth,
     sheetGesturesEnabled: Boolean = true,
     nestedScrollableState: ScrollableState? = null,
-    shape: Shape,
-    containerColor: Color,
-    scrimColor: Color,
-    dragHandle: @Composable (() -> Unit)? = null,
+    shape: Shape = androidx.compose.material3.BottomSheetDefaults.ExpandedShape,
+    containerColor: Color = androidx.compose.material3.BottomSheetDefaults.ContainerColor,
+    contentColor: Color = contentColorFor(containerColor),
+    tonalElevation: Dp = 0.dp,
+    scrimColor: Color = androidx.compose.material3.BottomSheetDefaults.ScrimColor,
+    dragHandle: @Composable (() -> Unit)? = { androidx.compose.material3.BottomSheetDefaults.DragHandle() },
     contentWindowInsets: @Composable () -> WindowInsets = { BottomSheetDefaults.windowInsets },
     properties: ModalBottomSheetProperties = ModalBottomSheetDefaults.properties,
-    content: @Composable ColumnScope.() -> Unit
+    showMotion: FiniteAnimationSpec<Float> = BottomSheetAnimationSpec,
+    hideMotion: FiniteAnimationSpec<Float> = BottomSheetAnimationSpec,
+    anchoredDraggableMotionSpec: FiniteAnimationSpec<Float> = BottomSheetAnimationSpec,
+    content: @Composable ColumnScope.() -> Unit,
 )
 ```
 

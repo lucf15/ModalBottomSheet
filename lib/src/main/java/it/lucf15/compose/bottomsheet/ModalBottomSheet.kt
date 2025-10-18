@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package it.lucf15.compose.bottomsheet
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -34,13 +38,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Surface
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.R
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.Shape
@@ -49,11 +59,15 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.collapse
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.dismiss
 import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.Dp
@@ -66,6 +80,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.max
 import kotlin.math.min
+import androidx.compose.material3.R as MaterialR
 
 @Composable
 fun ModalBottomSheet(
@@ -75,14 +90,26 @@ fun ModalBottomSheet(
     sheetMaxWidth: Dp = BottomSheetDefaults.SheetMaxWidth,
     sheetGesturesEnabled: Boolean = true,
     nestedScrollableState: ScrollableState? = null,
-    shape: Shape,
-    containerColor: Color,
-    scrimColor: Color,
-    dragHandle: @Composable (() -> Unit)? = null,
+    shape: Shape = androidx.compose.material3.BottomSheetDefaults.ExpandedShape,
+    containerColor: Color = androidx.compose.material3.BottomSheetDefaults.ContainerColor,
+    contentColor: Color = contentColorFor(containerColor),
+    tonalElevation: Dp = 0.dp,
+    scrimColor: Color = androidx.compose.material3.BottomSheetDefaults.ScrimColor,
+    dragHandle: @Composable (() -> Unit)? = { androidx.compose.material3.BottomSheetDefaults.DragHandle() },
     contentWindowInsets: @Composable () -> WindowInsets = { BottomSheetDefaults.windowInsets },
     properties: ModalBottomSheetProperties = ModalBottomSheetDefaults.properties,
+    showMotion: FiniteAnimationSpec<Float> = BottomSheetAnimationSpec,
+    hideMotion: FiniteAnimationSpec<Float> = BottomSheetAnimationSpec,
+    anchoredDraggableMotionSpec: FiniteAnimationSpec<Float> = BottomSheetAnimationSpec,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+
+    SideEffect {
+        sheetState.showMotionSpec = showMotion
+        sheetState.hideMotionSpec = hideMotion
+        sheetState.anchoredDraggableMotionSpec = anchoredDraggableMotionSpec
+    }
+
     val scope = rememberCoroutineScope()
     val animateToDismiss: () -> Unit = {
         if (sheetState.anchoredDraggableState.confirmValueChange(Hidden)) {
@@ -105,6 +132,7 @@ fun ModalBottomSheet(
 
     ModalBottomSheetDialog(
         properties = properties,
+        contentColor = contentColor,
         onDismissRequest = {
             if (sheetState.currentValue == Expanded && sheetState.hasPartiallyExpandedState) {
                 // Smoothly animate away predictive back transformations since we are not fully
@@ -140,6 +168,8 @@ fun ModalBottomSheet(
                 sheetGesturesEnabled = sheetGesturesEnabled,
                 shape = shape,
                 containerColor = containerColor,
+                contentColor = contentColor,
+                tonalElevation = tonalElevation,
                 dragHandle = dragHandle,
                 contentWindowInsets = contentWindowInsets,
                 content = content
@@ -164,13 +194,15 @@ internal fun BoxScope.ModalBottomSheetContent(
     sheetGesturesEnabled: Boolean = true,
     shape: Shape,
     containerColor: Color,
+    contentColor: Color = contentColorFor(containerColor),
+    tonalElevation: Dp = androidx.compose.material3.BottomSheetDefaults.Elevation,
     dragHandle: @Composable (() -> Unit)?,
     contentWindowInsets: @Composable () -> WindowInsets,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    //val bottomSheetPaneTitle = getString(string = Strings.BottomSheetPaneTitle)
+    val bottomSheetPaneTitle = getString(string = Strings.BottomSheetPaneTitle)
 
-    Box(
+    Surface(
         modifier =
             modifier
                 .align(Alignment.TopCenter)
@@ -223,7 +255,7 @@ internal fun BoxScope.ModalBottomSheetContent(
                     onDragStopped = { settleToDismiss(it) }
                 )
                 .semantics {
-                    //paneTitle = bottomSheetPaneTitle
+                    paneTitle = bottomSheetPaneTitle
                     traversalIndex = 0f
                 }
                 .consumeWindowInsets(WindowInsets(top = sheetState.offset.toInt().coerceAtLeast(0)))
@@ -237,8 +269,11 @@ internal fun BoxScope.ModalBottomSheetContent(
                         transformOrigin =
                             TransformOrigin(0.5f, (sheetOffset + sheetHeight) / sheetHeight)
                     }
-                }
-                .background(color = containerColor, shape = shape),
+                },
+        shape = shape,
+        color = containerColor,
+        contentColor = contentColor,
+        tonalElevation = tonalElevation,
     ) {
         Column(
             Modifier
@@ -256,10 +291,10 @@ internal fun BoxScope.ModalBottomSheetContent(
                     transformOrigin = PredictiveBackChildTransformOrigin
                 }
         ) {
+            val collapseActionLabel = getString(Strings.BottomSheetPartialExpandDescription)
+            val dismissActionLabel = getString(Strings.BottomSheetDismissDescription)
+            val expandActionLabel = getString(Strings.BottomSheetExpandDescription)
             if (dragHandle != null) {
-                //val collapseActionLabel = getString(Strings.BottomSheetPartialExpandDescription)
-                //val dismissActionLabel = getString(Strings.BottomSheetDismissDescription)
-                //val expandActionLabel = getString(Strings.BottomSheetExpandDescription)
                 Box(
                     Modifier
                         .align(Alignment.CenterHorizontally)
@@ -269,19 +304,19 @@ internal fun BoxScope.ModalBottomSheetContent(
                             // Provides semantics to interact with the bottomsheet based on its
                             // current value.
                             with(sheetState) {
-                                dismiss/*(dismissActionLabel)*/ {
+                                dismiss(dismissActionLabel) {
                                     animateToDismiss()
                                     true
                                 }
                                 if (currentValue == PartiallyExpanded) {
-                                    expand/*(expandActionLabel)*/ {
+                                    expand(expandActionLabel) {
                                         if (anchoredDraggableState.confirmValueChange(Expanded)) {
                                             scope.launch { sheetState.expand() }
                                         }
                                         true
                                     }
                                 } else if (hasPartiallyExpandedState) {
-                                    collapse/*(collapseActionLabel)*/ {
+                                    collapse(collapseActionLabel) {
                                         if (
                                             anchoredDraggableState.confirmValueChange(PartiallyExpanded)
                                         ) {
@@ -351,14 +386,14 @@ fun rememberModalBottomSheetState(
 @Composable
 private fun Scrim(color: Color, onDismissRequest: () -> Unit, visible: Boolean, alpha: () -> Float) {
     if (color.isSpecified) {
-        //val closeSheet = getString(Strings.CloseSheet)
+        val closeSheet = getString(Strings.CloseSheet)
         val dismissSheet =
             if (visible) {
                 Modifier
                     .pointerInput(onDismissRequest) { detectTapGestures { onDismissRequest() } }
                     .semantics(mergeDescendants = true) {
                         traversalIndex = 1f
-                        //contentDescription = closeSheet
+                        contentDescription = closeSheet
                         onClick {
                             onDismissRequest()
                             true
@@ -380,3 +415,35 @@ private fun Scrim(color: Color, onDismissRequest: () -> Unit, visible: Boolean, 
 private val PredictiveBackMaxScaleXDistance = 48.dp
 private val PredictiveBackMaxScaleYDistance = 24.dp
 private val PredictiveBackChildTransformOrigin = TransformOrigin(0.5f, 0f)
+
+@Composable
+@ReadOnlyComposable
+internal fun getString(string: Strings): String {
+    LocalConfiguration.current
+    val resources = LocalContext.current.resources
+    return resources.getString(string.value)
+}
+
+
+@JvmInline
+@Immutable
+internal value class Strings(val value: Int) {
+    companion object {
+        inline val BottomSheetPaneTitle
+            get() = Strings(MaterialR.string.m3c_bottom_sheet_pane_title)
+
+        inline val BottomSheetPartialExpandDescription
+            get() = Strings(MaterialR.string.m3c_bottom_sheet_collapse_description)
+
+        inline val BottomSheetDismissDescription
+            get() = Strings(MaterialR.string.m3c_bottom_sheet_dismiss_description)
+
+        inline val BottomSheetExpandDescription
+            get() = Strings(MaterialR.string.m3c_bottom_sheet_expand_description)
+
+        inline val CloseSheet
+            get() = Strings(R.string.close_sheet)
+    }
+}
+
+internal val BottomSheetAnimationSpec: FiniteAnimationSpec<Float> = tween(durationMillis = 300, easing = FastOutSlowInEasing)

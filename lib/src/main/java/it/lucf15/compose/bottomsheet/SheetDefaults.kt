@@ -17,10 +17,8 @@
 package it.lucf15.compose.bottomsheet
 
 import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.layout.WindowInsets
@@ -267,8 +265,8 @@ class SheetState(
     internal val offset: Float
         get() = anchoredDraggableState.offset
 
-    internal val showMotionSpec: FiniteAnimationSpec<Float> = BottomSheetShowAnimationSpec
-    internal val hideMotionSpec: FiniteAnimationSpec<Float> = BottomSheetHideAnimationSpec
+    internal var showMotionSpec: FiniteAnimationSpec<Float> = BottomSheetAnimationSpec
+    internal var hideMotionSpec: FiniteAnimationSpec<Float> = BottomSheetAnimationSpec
 
     val scrimAlpha: Float
         get() {
@@ -323,10 +321,6 @@ enum class SheetValue {
 /** Contains the default values used by [ModalBottomSheet] and [BottomSheetScaffold]. */
 @Stable
 object BottomSheetDefaults {
-    /** The default peek height used by [BottomSheetScaffold]. */
-    val SheetPeekHeight = 56.dp
-
-    /** The default max width used by [ModalBottomSheet] and [BottomSheetScaffold] */
     val SheetMaxWidth = 640.dp
 
     /** Default insets to be used and consumed by the [ModalBottomSheet]'s content. */
@@ -449,8 +443,3 @@ internal fun rememberSheetState(
         )
     }
 }
-
-/** A function that provides the default animation spec used by [SheetState]. */
-private val BottomSheetAnimationSpec: FiniteAnimationSpec<Float> = tween(durationMillis = 300, easing = FastOutSlowInEasing)
-private val BottomSheetShowAnimationSpec: FiniteAnimationSpec<Float> = BottomSheetAnimationSpec
-private val BottomSheetHideAnimationSpec: FiniteAnimationSpec<Float> = BottomSheetAnimationSpec
