@@ -1,0 +1,22 @@
+name: Publish Android Library
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+      - name: Publish Android Library to GitHub Package Registry
+        run: ./gradlew publish
+        env:
+          GITHUB_ACTOR: ${{ secrets.ACTOR }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
