@@ -17,8 +17,6 @@ scrolling and IME (keyboard) padding:
    padding behavior
     - The official implementation applies `imePadding()` to the entire sheet, causing unwanted
       bottom padding when the keyboard appears
-    - This library uses `windowInsetsPadding()` instead, giving developers full control over padding
-      behavior
 
 ## Installation
 
